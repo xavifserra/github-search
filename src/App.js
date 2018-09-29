@@ -1,36 +1,59 @@
 import React, { Component } from 'react';
-import axios from 'axios';
 import Header from './components/Header';
 import Form from './components/Form';
+import List from './components/List';
+import {githubApi} from './lib/github-services';
 
 import './App.css';
 
 class App extends Component {
   state = {
-    list: []
-  }
-  
-  handleSubmit = (value) => {
-    console.log(value);
-    axios.get(`https://api.github.com/search/users?q=${value}+in:login`)
-      .then(({ data }) => {
-        this.setState({
-          list: data.items
-        })
-      })
+    list: [],
+    status: 'loaded',
   }
 
+  handleSubmit = (value) => {
+    this.setState({status : 'loading'})
+
+    githubApi.getUsers(value)
+    .then(({ data }) => {
+      this.setState({
+        list: data.items,
+        status: 'loaded'
+      })
+    })
+    .catch((e)=>{
+      this.setState({
+        status: 'error'
+      }
+      )
+    })
+  }
+
+  renderStatus = () => {
+    const { status } = this.state;
+    switch (status) {
+      case 'loaded':
+        return <List list={this.state.list}/>
+        break;
+      case 'loading':
+        return 'Loading ..... '
+        break;
+      case 'error':
+        return 'Wihtout connection .....'
+        break;
+      default:
+        return ''
+        break;
+    }
+  }
   render() {
     return (
       <div className="container">
         <Header >Github Search</Header>
         <Form onSubmit={this.handleSubmit}/>
         <ul>
-          {
-            this.state.list.map((user) => {
-              return <li key={user.login}>{user.login}</li>
-            })
-          }
+          { this.renderStatus()  }
         </ul>
       </div>
     );
